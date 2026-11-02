@@ -1085,7 +1085,26 @@ is no prior in-memory history to migrate on the first updated launch.
   A small Liquid Glass surface anchors Search on the left; compact windows
   retain the glass control group. Programme cells do not create individual glass
   surfaces. Glass reduction preferences and Reduce Transparency use the existing shared
-  fallbacks. Guide focus uses a crisp rounded outline and tonal fill, with a
+  fallbacks.
+  On a TV the full-width preview sits behind the whole guide, and native glass
+  over moving video captures its backdrop every frame. Native glass is therefore
+  limited to small surfaces: one group holds Search and Multiviews, and the time
+  ruler's pinned day pill (shown only away from today) refracts the times that
+  scroll beneath it. Larger surfaces use faux glass, a faint scrim with a lit
+  rim and no backdrop sampling: the time ruler sits on a header shelf, and the
+  category list on a panel that ends with its last category. The selected
+  category keeps the tonal selected fill. Increased contrast and Reduce
+  Transparency keep solid surfaces.
+  Programme cells wear faux glass: their tonal fill lit from the top, folded
+  into one gradient so each cell still blends once, plus a lit rim. The grid
+  reads as glass while dozens of cells scroll over the preview at no sampling
+  cost. No-listing cells, logo cells and the info bar's artwork take the lit
+  rim only: no-listing space stays clear so the elapsed fill alone marks it,
+  and brand pixels and programme art are never tinted.
+  Developer Mode's "Live TV guide glass lens" row is an experiment for
+  profiling: it draws native glass under the one focused programme or channel
+  cell, keeping the focus outline. It stays off by default and off in the
+  player's guide card, which sits over full-screen playback. Guide focus uses a crisp rounded outline and tonal fill, with a
   solid high-contrast treatment under increased contrast or Reduce Transparency.
   Focus outlines pair a bright outer edge with a dark inner keyline so white
   artwork cannot hide focus. Both strokes sit inside the existing rounded bounds,

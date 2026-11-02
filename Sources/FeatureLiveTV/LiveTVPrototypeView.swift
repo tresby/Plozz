@@ -144,6 +144,7 @@ public struct LiveTVPrototypeView<PlayerContent: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.layoutDirection) private var layoutDirection
     @Environment(\.locale) private var locale
+    @AppStorage(LiveTVGuideGlassLens.defaultsKey) private var glassLensRequested = false
     private let isActive: Bool
     private let profileID: String
     private let allowsPlayback: Bool
@@ -359,6 +360,10 @@ public struct LiveTVPrototypeView<PlayerContent: View>: View {
 
     public var body: some View {
         lifecycleContent
+            .environment(
+                \.liveGuideGlassLens,
+                glassLensRequested && DeveloperModeModel.shared.isEnabled
+            )
     }
 
     private var playerAndGuideSurface: some View {

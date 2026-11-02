@@ -132,6 +132,9 @@ final class PrototypeNativeGuideListTests: XCTestCase {
         environment.isEnabled = true
         environment.layoutDirection = .rightToLeft
         XCTAssertNotEqual(baseline, Guide.RowEnvironment(environment))
+        environment.layoutDirection = .leftToRight
+        environment.liveGuideGlassLens = true
+        XCTAssertNotEqual(baseline, Guide.RowEnvironment(environment), "Hosted rows must see the glass lens toggle")
     }
 }
 #endif

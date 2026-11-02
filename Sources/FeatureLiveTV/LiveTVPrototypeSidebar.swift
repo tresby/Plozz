@@ -33,22 +33,54 @@ struct PrototypeBrowseSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PrototypeLayout.gap) {
-            Button(action: search) {
-                Label(isSearching ? "Back to guide" : "Search", systemImage: isSearching ? "chevron.backward" : "magnifyingglass")
-                    #if os(tvOS)
-                    .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
-                    .padding(.horizontal, PrototypeLayout.gap)
-                    #else
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    #endif
-            }
             #if os(tvOS)
-            .buttonStyle(PrototypeButtonStyle(padded: false, surface: .control))
+            // Search, Multiviews and Manage channels share one glass group, so
+            // adding an action adds no second glass surface.
+            VStack(spacing: PrototypeLayout.smallGap) {
+                Button(action: search) {
+                    Label(isSearching ? "Back to guide" : "Search", systemImage: isSearching ? "chevron.backward" : "magnifyingglass")
+                        .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
+                        .padding(.horizontal, PrototypeLayout.gap)
+                }
+                .buttonStyle(PrototypeButtonStyle(padded: false, surface: .control))
+                .focused($focused, equals: .search)
+                .disabled(isEnteringCategory)
+                .accessibilityValue(model.query)
+                .accessibilityIdentifier("live-tv-search")
+                if let multiviews {
+                    Button(action: multiviews) {
+                        Label("Multiviews", systemImage: "rectangle.split.2x2")
+                            .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
+                            .padding(.horizontal, PrototypeLayout.gap)
+                    }
+                    .buttonStyle(PrototypeButtonStyle(padded: false, surface: .control))
+                    .focused($focused, equals: .multiviews)
+                    .disabled(isEnteringCategory)
+                    .accessibilityIdentifier("live-tv-multiview-favorites")
+                }
+                if let manageChannels {
+                    Button(action: manageChannels) {
+                        Label("Manage channels", systemImage: "slider.horizontal.3")
+                            .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
+                            .padding(.horizontal, PrototypeLayout.gap)
+                    }
+                    .buttonStyle(PrototypeButtonStyle(padded: false, surface: .control))
+                    .focused($focused, equals: .manageChannels)
+                    .disabled(isEnteringCategory)
+                    .accessibilityIdentifier("live-tv-manage-channels")
+                }
+            }
             .padding(PrototypeLayout.controlInset)
             .background { PrototypeControlSurface() }
-            #else
-            .buttonStyle(.bordered)
+            #if DEBUG
+            .modifier(PrototypeBrowseLayoutObservation(element: "sidebar-search"))
             #endif
+            #else
+            Button(action: search) {
+                Label(isSearching ? "Back to guide" : "Search", systemImage: isSearching ? "chevron.backward" : "magnifyingglass")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.bordered)
             .focused($focused, equals: .search)
             .disabled(isEnteringCategory)
             .accessibilityValue(model.query)
@@ -59,37 +91,24 @@ struct PrototypeBrowseSidebar: View {
             if let multiviews {
                 Button(action: multiviews) {
                     Label("Multiviews", systemImage: "rectangle.split.2x2")
-                        #if os(iOS)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        #endif
                 }
-                    #if os(tvOS)
-                    .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
-                    .buttonStyle(PrototypeButtonStyle(surface: .control))
-                    #else
-                    .buttonStyle(.bordered)
-                    #endif
-                    .focused($focused, equals: .multiviews)
-                    .disabled(isEnteringCategory)
-                    .accessibilityIdentifier("live-tv-multiview-favorites")
+                .buttonStyle(.bordered)
+                .focused($focused, equals: .multiviews)
+                .disabled(isEnteringCategory)
+                .accessibilityIdentifier("live-tv-multiview-favorites")
             }
             if let manageChannels {
                 Button(action: manageChannels) {
                     Label("Manage channels", systemImage: "slider.horizontal.3")
-                        #if os(iOS)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        #endif
                 }
-                    #if os(tvOS)
-                    .frame(maxWidth: .infinity, minHeight: PrototypeLayout.controlHeight, alignment: .leading)
-                    .buttonStyle(PrototypeButtonStyle(surface: .control))
-                    #else
-                    .buttonStyle(.bordered)
-                    #endif
-                    .focused($focused, equals: .manageChannels)
-                    .disabled(isEnteringCategory)
-                    .accessibilityIdentifier("live-tv-manage-channels")
+                .buttonStyle(.bordered)
+                .focused($focused, equals: .manageChannels)
+                .disabled(isEnteringCategory)
+                .accessibilityIdentifier("live-tv-manage-channels")
             }
+            #endif
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -122,7 +141,11 @@ struct PrototypeBrowseSidebar: View {
                                 .contentShape(Rectangle())
                             }
                             #if os(tvOS)
-                            .buttonStyle(PrototypeButtonStyle(padded: false, surface: .control))
+                            .buttonStyle(
+                                PrototypeButtonStyle(
+                                    selected: model.category == category, padded: false, surface: .control
+                                )
+                            )
                             #else
                             .buttonStyle(.bordered)
                             #endif
@@ -135,7 +158,14 @@ struct PrototypeBrowseSidebar: View {
                             .accessibilityIdentifier("live-tv-sidebar-category-\(category ?? "all")")
                         }
                     }
+                    #if os(tvOS)
+                    .padding(PrototypeLayout.controlInset)
+                    // Behind the content, so a short list's panel ends with its
+                    // last category, without measuring the list to size it.
+                    .background { PrototypeFauxGlassSurface() }
+                    #else
                     .padding(.vertical, PrototypeLayout.smallGap)
+                    #endif
                 }
                 .scrollIndicators(.hidden)
                 .verticalEdgeFadeMask(

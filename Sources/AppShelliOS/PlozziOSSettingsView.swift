@@ -476,6 +476,7 @@ private struct PlozziOSSettingsSplitView: View {
         }
     }
     @State private var confirmSignOutAll = false
+    @AppStorage(LiveTVGuideGlassLens.defaultsKey) private var liveGuideGlassLens = false
     /// Whether the Parental PIN has been entered for the Kids Profile currently
     /// open. View state, cleared when the profile changes, so unsealing once
     /// never becomes unsealing for good.
@@ -647,6 +648,9 @@ private struct PlozziOSSettingsSplitView: View {
                             Button("Reset to First Run") {
                                 appModel.resetToFirstRunForDebugging()
                                 onClose()
+                            }
+                            Toggle(isOn: $liveGuideGlassLens) {
+                                Text(verbatim: "Live TV guide glass lens")
                             }
                             Button("Turn Off Developer Mode", role: .destructive) {
                                 developerMode.disable()
@@ -1013,6 +1017,7 @@ private struct PlozziOSSettingsCompactMenu: View {
     var onSwitchTo: (String) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
     @State private var confirmSignOutAll = false
+    @AppStorage(LiveTVGuideGlassLens.defaultsKey) private var liveGuideGlassLens = false
     @State private var showMetadata = false
     @State private var searchSelection: SettingsSearchEntry?
     @State private var isHeaderCollapsed = false
@@ -1268,6 +1273,9 @@ private struct PlozziOSSettingsCompactMenu: View {
                         Button("Reset to First Run") {
                             appModel.resetToFirstRunForDebugging()
                             dismiss()
+                        }
+                        Toggle(isOn: $liveGuideGlassLens) {
+                            Text(verbatim: "Live TV guide glass lens")
                         }
                         Button("Turn Off Developer Mode", role: .destructive) {
                             developerMode.disable()

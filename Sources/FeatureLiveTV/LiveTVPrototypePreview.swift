@@ -394,6 +394,8 @@ struct PrototypePreviewHero: View {
     var isLoading = false
     @Environment(\.themePalette) private var palette
     @Environment(\.locale) private var locale
+    @Environment(\.plozzReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Group {
@@ -533,6 +535,14 @@ struct PrototypePreviewHero: View {
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: PrototypeLayout.logoRadius, style: .continuous))
+        .overlay {
+            // Faux like the grid's: this sits over the most visible stretch of
+            // the live preview, where real glass would sample every frame.
+            if !reduceTransparency && contrast != .increased {
+                RoundedRectangle(cornerRadius: PrototypeLayout.logoRadius, style: .continuous)
+                    .strokeBorder(PrototypeGlass.rim, lineWidth: 1)
+            }
+        }
         #if DEBUG
         .modifier(PrototypeBrowseLayoutObservation(element: "artwork"))
         #endif

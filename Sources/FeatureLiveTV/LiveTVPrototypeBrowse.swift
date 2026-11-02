@@ -785,6 +785,7 @@ struct PrototypeTimeRuler: View {
     var span: TimeInterval = PrototypeLayout.timelineSpanSeconds
     @Environment(\.themePalette) private var palette
     @Environment(\.calendar) private var calendar
+    @Environment(\.colorSchemeContrast) private var contrast
     @ScaledMetric(relativeTo: .caption) private var height: CGFloat = PrototypeLayout.rulerHeight
 
     var body: some View {
@@ -836,7 +837,16 @@ struct PrototypeTimeRuler: View {
                         .lineLimit(1)
                         .padding(.horizontal, PrototypeLayout.rowInset)
                         .frame(maxHeight: .infinity)
-                        .background(Capsule().fill(palette.cardOpaqueSurface))
+                        .background {
+                            if contrast == .increased {
+                                Capsule().fill(palette.cardOpaqueSurface)
+                            } else {
+                                // Small and shown only away from today, so real
+                                // glass is affordable here, refracting the times
+                                // that scroll beneath it.
+                                PrototypeControlSurface(cornerRadius: height / 2, scrimOpacity: 0.45)
+                            }
+                        }
                 }
             }
             .overlay(alignment: .bottom) {
@@ -851,6 +861,8 @@ struct PrototypeTimeRuler: View {
         }
         .font(.caption.monospacedDigit())
         .foregroundStyle(palette.primaryText)
+        // The header shelf sits over the live preview, so its glass is faux.
+        .background { PrototypeFauxGlassSurface(cornerRadius: min(PrototypeLayout.rowRadius, height / 2)) }
     }
 
     /// Half-hour ticks from a screen before the visible time to a screen after it.

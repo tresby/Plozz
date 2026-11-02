@@ -264,6 +264,24 @@ struct PrototypeFocusOutline: View {
     }
 }
 
+/// The guide's faux glass: plain fills that read as glass without sampling the
+/// live preview behind them.
+enum PrototypeGlass {
+    /// The cell's own fill, lit from the top. Folded into one gradient so the
+    /// sheen costs no extra blended layer.
+    static func sheen(over fill: Color) -> LinearGradient {
+        LinearGradient(
+            colors: [fill.mix(with: .white, by: 0.10), fill.mix(with: .white, by: 0.02)],
+            startPoint: .top, endPoint: .bottom
+        )
+    }
+
+    static let rim = LinearGradient(
+        colors: [.white.opacity(0.35), .white.opacity(0.08), .white.opacity(0.14)],
+        startPoint: .top, endPoint: .bottom
+    )
+}
+
 struct PrototypeButtonStyle: ButtonStyle {
     var selected = false
     var padded = true
@@ -292,6 +310,7 @@ private struct PrototypeButtonBody: View {
     @Environment(\.themePalette) private var palette
     @Environment(\.plozzReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.liveGuideGlassLens) private var glassLens
 
     private var solidFocus: Bool {
         focused && surface != .station
@@ -329,13 +348,47 @@ private struct PrototypeButtonBody: View {
         #endif
     }
 
+    /// Only the one cell wearing the focus outline gets the lens, so the guide
+    /// never holds more than a single live glass shape.
+    private var showsGlassLens: Bool {
+        glassLens && (surface == .program || surface == .guide)
+            && (focused || showsTouchSelection) && !solidFocus
+    }
+
+    /// Resting grid cells read as glass without being glass: a top-lit sheen and
+    /// a lit rim, drawn as plain fills. Dozens of cells sit over the live
+    /// preview and move with every scroll, where real glass would re-sample the
+    /// video and rebuild each cell's shape per frame.
+    private var fauxGlassCell: Bool {
+        surface == .program && !reduceTransparency && contrast != .increased
+    }
+
+    /// Logo cells take the rim only: a sheen would wash over brand pixels. Cells
+    /// without a listing stay clear inside too, so the elapsed-time fill is the
+    /// only thing marking them and an empty row never reads as a programme.
+    private var fauxGlassRim: Bool {
+        (surface == .program || surface == .guide || surface == .station)
+            && !reduceTransparency && contrast != .increased
+    }
+
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         configuration.label
             .foregroundStyle(solidFocus ? palette.onAccent : palette.primaryText)
             .padding(padded ? PrototypeLayout.gap : 0)
-            .background(
-                fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
+            .background {
+                if showsGlassLens, #available(iOS 26.0, tvOS 26.0, *) {
+                    // An underlay, never wrapped around the label: tvOS 27 hangs
+                    // when glass encloses text that gains focus.
+                    Color.clear.glassEffect(.regular.tint(palette.focusedCardGlassTint), in: shape)
+                } else if fauxGlassCell {
+                    // One gradient layer, not a sheen over the fill: every cell
+                    // blends once, which matters across a 4K grid over video.
+                    shape.fill(PrototypeGlass.sheen(over: fill))
+                } else {
+                    shape.fill(fill)
+                }
+            }
             .overlay {
                 if (focused || showsTouchSelection) && !solidFocus {
                     PrototypeFocusOutline(
@@ -343,9 +396,10 @@ private struct PrototypeButtonBody: View {
                         color: surface == .station ? .white : palette.primaryText,
                         lineWidth: contrast == .increased ? 4 : 3.5
                     )
-                } else {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(selected && !focused ? palette.accent.opacity(0.35) : .clear, lineWidth: 1)
+                } else if selected && !focused {
+                    shape.strokeBorder(palette.accent.opacity(0.35), lineWidth: 1)
+                } else if fauxGlassRim {
+                    shape.strokeBorder(PrototypeGlass.rim, lineWidth: 1)
                 }
             }
             .opacity(configuration.isPressed ? 0.75 : 1)
@@ -395,24 +449,64 @@ struct PrototypeGuideSurface: View {
 }
 
 /// One glass underlay, not a glass layer per programme or a focus-dependent style.
+///
+/// Native glass is kept to small surfaces: on a TV the whole guide sits over
+/// the live preview, and glass over moving video captures its backdrop every
+/// frame. Larger surfaces use `PrototypeFauxGlassSurface` instead.
 struct PrototypeControlSurface: View {
+    var cornerRadius: CGFloat = PrototypeLayout.controlGroupRadius
+    /// Raised behind text that scrolls underneath, which glass alone would let through.
+    var scrimOpacity: Double = 0.1
     @Environment(\.plozzReduceTransparency) private var reduceTransparency
     @Environment(\.plozzReducePanelGlass) private var reduceGlass
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PrototypeLayout.controlGroupRadius, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         Group {
             if reduceTransparency {
-                Color.clear.plozzSurface(.raised, cornerRadius: PrototypeLayout.controlGroupRadius)
+                Color.clear.plozzSurface(.raised, cornerRadius: cornerRadius)
             } else if reduceGlass {
                 Color.clear.plozzFrostedBackground(shape).plozzFrostedBorder(shape)
             } else {
-                Color.clear.plozzGlassPanel(cornerRadius: PrototypeLayout.controlGroupRadius)
+                Color.clear.plozzGlassPanel(cornerRadius: cornerRadius, scrimOpacity: scrimOpacity)
             }
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
+}
+
+/// Glass with no backdrop sampling, for the guide's larger surfaces: a faint
+/// scrim and a lit rim, which reads as glass over the live preview without the
+/// per-frame capture real glass would cost there. Solid under Reduce
+/// Transparency or increased contrast, like the rest of the guide.
+struct PrototypeFauxGlassSurface: View {
+    var cornerRadius: CGFloat = PrototypeLayout.controlGroupRadius
+    @Environment(\.plozzReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        Group {
+            if reduceTransparency || contrast == .increased {
+                Color.clear.plozzSurface(.raised, cornerRadius: cornerRadius)
+            } else {
+                // Drawn as two shapes rather than through the shared panel, whose
+                // clip adds a pass that recurs on every frame of the video beneath.
+                shape.fill((colorScheme == .dark ? Color.black : Color.white).opacity(0.1))
+                    .overlay { shape.strokeBorder(PrototypeGlass.rim, lineWidth: 1.5) }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+extension EnvironmentValues {
+    /// Developer Mode experiment: native glass under the focused guide cell.
+    /// Off by default until it has been profiled over the live preview.
+    @Entry var liveGuideGlassLens = false
 }
 
 enum PrototypeSheet: Identifiable {

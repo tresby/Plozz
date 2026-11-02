@@ -123,6 +123,7 @@ struct PrototypeNativeGuideList<Revision: Equatable, Content: View>: UIViewContr
         let calendar: Calendar
         let timeZone: TimeZone
         let isEnabled: Bool
+        let glassLens: Bool
 
         init(_ environment: EnvironmentValues) {
             palette = environment.themePalette
@@ -135,6 +136,7 @@ struct PrototypeNativeGuideList<Revision: Equatable, Content: View>: UIViewContr
             calendar = environment.calendar
             timeZone = environment.timeZone
             isEnabled = environment.isEnabled
+            glassLens = environment.liveGuideGlassLens
         }
     }
 
@@ -172,6 +174,7 @@ struct PrototypeNativeGuideList<Revision: Equatable, Content: View>: UIViewContr
                 .environment(\.calendar, state.environment.calendar)
                 .environment(\.timeZone, state.environment.timeZone)
                 .environment(\.isEnabled, state.environment.isEnabled)
+                .environment(\.liveGuideGlassLens, state.environment.glassLens)
         }
     }
 

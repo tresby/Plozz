@@ -54,6 +54,7 @@ public struct SettingsView: View {
     /// `HomeHeroView` via this UserDefaults key. `0` = launch default, `1` = force
     /// UIKit, `2` = force SwiftUI. Changing it applies live on return to Home.
     @AppStorage("PLZDebugHeroForegroundMode") private var heroForegroundMode = 0
+    @AppStorage(LiveTVGuideGlassLens.defaultsKey) private var liveGuideGlassLens = false
     #endif
 
     private let subtitleBehavior: SubtitleBehaviorModel
@@ -702,6 +703,9 @@ public struct SettingsView: View {
                 }
                 developerModeRow
 
+                // In every build, so Release profiling runs can A/B it.
+                liveGuideGlassLensRow
+
                 // Only meaningful in Debug builds (the hero A/B override the
                 // renderer reads is itself `#if DEBUG`), so keep it compiled out
                 // of release; still gated on Developer Mode when present.
@@ -749,6 +753,31 @@ public struct SettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(SettingsFocusButtonStyle())
+    }
+
+    /// Toggles the Live TV guide's experimental focused-cell glass lens, which
+    /// the guide reads live through `LiveTVGuideGlassLens.defaultsKey`.
+    private var liveGuideGlassLensRow: some View {
+        Button {
+            liveGuideGlassLens.toggle()
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: "sparkles.rectangle.stack")
+                    .font(.system(size: 22, weight: .regular))
+                    .frame(width: 30, height: 30)
+                Text(verbatim: "Live TV Guide Glass Lens").font(.callout.weight(.medium))
+                Spacer()
+                Text(verbatim: liveGuideGlassLens ? "On" : "Off")
+                    .font(.callout)
+                    .plozzForeground(.secondary)
+            }
+            .foregroundStyle(.orange)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(SettingsFocusButtonStyle())
+        .accessibilityValue(Text(verbatim: liveGuideGlassLens ? "On" : "Off"))
     }
 
     /// Read-only "Device & Build" facts — which build is installed (canonical vs

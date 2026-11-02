@@ -113,6 +113,14 @@ private struct PlozzFrostedBorderModifier<S: InsettableShape>: ViewModifier {
     }
 }
 
+/// Developer Mode experiment: native Liquid Glass under the focused Live TV
+/// guide cell. One live glass shape that moves with focus over the live
+/// preview, so it stays off until profiled on hardware. Settings writes the
+/// key; the guide reads it live.
+public enum LiveTVGuideGlassLens {
+    public static let defaultsKey = "PLZDebugLiveGuideGlassLens"
+}
+
 /// The surface that stands in for Liquid Glass when the frame rate matters more
 /// than the material does.
 ///
